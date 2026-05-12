@@ -1,57 +1,69 @@
+import os
 from telegram import Update
 from telegram.ext import (
-    ApplicationBuilder,
+    Application,
     CommandHandler,
-    ContextTypes
+    MessageHandler,
+    filters,
+    ContextTypes,
 )
 
-import yfinance as yf
+# Load Telegram Bot Token from Environment Variable
+TOKEN = os.getenv("BOT_TOKEN")
 
-from config import TELEGRAM_TOKEN
+# Check if token exists
+if not TOKEN:
+    raise ValueError("BOT_TOKEN environment variable is missing!")
 
+print("TOKEN LOADED SUCCESSFULLY")
+print("✅ Bot running...")
 
-async def start(update: Update,
-                context: ContextTypes.DEFAULT_TYPE):
-
+# Start Command
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "📊 AI Finance Bot Running"
+        "🤖 AI Finance Bot is running successfully!\n\n"
+        "Ask me about:\n"
+        "• Stocks\n"
+        "• Gold price\n"
+        "• Investment ideas\n"
+        "• Market trends"
     )
 
-
-async def stock(update: Update,
-                context: ContextTypes.DEFAULT_TYPE):
-
-    if not context.args:
-        await update.message.reply_text(
-            "Usage: /stock AAPL"
-        )
-        return
-
-    symbol = context.args[0]
-
-    stock = yf.Ticker(symbol)
-
-    hist = stock.history(period="5d")
-
-    price = hist['Close'].iloc[-1]
-
+# Help Command
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        f"{symbol} Price: ${price}"
+        "📌 Commands:\n"
+        "/start - Start bot\n"
+        "/help - Show help"
     )
 
+# Handle User Messages
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_message = update.message.text
 
-app = ApplicationBuilder().token(
-    TELEGRAM_TOKEN
-).build()
+    response = (
+        f"📈 You asked:\n{user_message}\n\n"
+        "AI finance analysis feature will be added soon."
+    )
 
-app.add_handler(
-    CommandHandler("start", start)
-)
+    await update.message.reply_text(response)
 
-app.add_handler(
-    CommandHandler("stock", stock)
-)
+# Main Function
+def main():
+    app = Application.builder().token(TOKEN).build()
 
-print("Bot running...")
+    # Add command handlers
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("help", help_command))
 
-app.run_polling()
+    # Add message handler
+    app.add_handler(
+        MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)
+    )
+
+    # Start bot polling
+    app.run_polling()
+
+# Run Bot
+if __name__ == "__main__":
+    main()
